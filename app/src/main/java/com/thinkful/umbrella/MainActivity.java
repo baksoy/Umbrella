@@ -65,7 +65,7 @@ public class MainActivity extends ActionBarActivity {
             HttpURLConnection urlConnection = null;
 
             try {
-                URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=London&mode=json&units=metric&cnt=1");
+                URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=Washington,D.C.&mode=json&units=metric&cnt=1");
                 urlConnection = (HttpURLConnection) url.openConnection();
                 useUmbrellaStr = useUmbrella(urlConnection.getInputStream());
             } catch (IOException e) {
