@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="google_maps_key_instructions" templateMergeStrategy="replace"><!--
+
+    TODO: Before you run your application, you need a Google Maps API key.
+
+    To get one, follow this link, follow the directions and press "Create" at the end:
+
+https://console.developers.google.com/flows/enableapi?apiid=maps_android_backend&keyType=CLIENT_SIDE_ANDROID&r=59:82:6F:15:CA:6F:7F:77:D6:96:3B:91:1B:F4:F6:CA:18:18:13:D7%3Bcom.thinkful.mapper
+
+    You can also add your credentials to an existing key, using this line:
+    59:82:6F:15:CA:6F:7F:77:D6:96:3B:91:1B:F4:F6:CA:18:18:13:D7;com.thinkful.mapper
+
+    Once you have your key (it starts with "AIza"), replace the "google_maps_key"
+    string in this file.
+    --></string>
+
+    <string name="google_maps_key" templateMergeStrategy="preserve">AIzaSyAOCTM70ZsnnaDqxhVbiebrQlq2CyDrE0g</string>
+
+</resources>

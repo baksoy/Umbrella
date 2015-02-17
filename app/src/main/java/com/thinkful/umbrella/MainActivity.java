@@ -1,6 +1,6 @@
 package com.thinkful.umbrella;
 
-import android.annotation.TargetApi;
+import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
@@ -8,6 +8,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
+
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.model.LatLng;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -19,8 +23,11 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 
-public class MainActivity extends ActionBarActivity {
+
+public class MainActivity extends ActionBarActivity implements ConnectionCallbacks {
+    private GoogleApiClient mGoogleApiClient;
 
 
     @Override
@@ -31,9 +38,24 @@ public class MainActivity extends ActionBarActivity {
         WebServiceTask webServiceTask = new WebServiceTask();
         webServiceTask.execute("Bera Aksoy");
 
-
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addApi(LocationServices.API)
+                .build();
     }
 
+    @Override
+    public void onConnected(Bundle connectionHint) {
+        Location mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        LatLng latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+        Log.i("BAK", "latLng");
+    }
+
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -64,8 +86,16 @@ public class MainActivity extends ActionBarActivity {
             String useUmbrellaStr = "Don't know, sorry about that.";
             HttpURLConnection urlConnection = null;
 
+            Location mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+            LatLng latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
+
             try {
-                URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=Washington,D.C.&mode=json&units=metric&cnt=1");
+                Double mLatitude = latLng.latitude;
+                Double mLongitude = latLng.longitude;
+
+                //URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=Washington,D.C.&mode=json&units=metric&cnt=1");
+
+                URL url = new URL("http://api.openweathermap.org/data/2.5/find?lat="+mLatitude+"&lon="+mLongitude+"&cnt=10");
                 urlConnection = (HttpURLConnection) url.openConnection();
                 useUmbrellaStr = useUmbrella(urlConnection.getInputStream());
             } catch (IOException e) {
@@ -107,7 +137,7 @@ public class MainActivity extends ActionBarActivity {
                     //return city + "Yes";  -- Not sure why this is not working
                     return "Yes";
                 } else {
-                    return("No");
+                    return ("No");
                 }
             } catch (Exception e) {
                 Log.e("MainActivity", "Error", e);
@@ -122,5 +152,6 @@ public class MainActivity extends ActionBarActivity {
             }
             return "Don't know, sorry about that.";
         }
+
     }
 }
