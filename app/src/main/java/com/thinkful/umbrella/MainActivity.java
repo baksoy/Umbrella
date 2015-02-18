@@ -1,5 +1,7 @@
 package com.thinkful.umbrella;
 
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -9,9 +11,11 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
+import com.google.android.gms.common.api.GoogleApiClient.OnConnectionFailedListener;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.model.LatLng;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -22,12 +26,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.List;
+import java.util.Locale;
 
-import com.google.android.gms.common.api.GoogleApiClient.ConnectionCallbacks;
 
-
-public class MainActivity extends ActionBarActivity implements ConnectionCallbacks {
-    private GoogleApiClient mGoogleApiClient;
+public class MainActivity extends ActionBarActivity implements ConnectionCallbacks, OnConnectionFailedListener {
+    protected GoogleApiClient mGoogleApiClient;
 
 
     @Override
@@ -35,22 +39,39 @@ public class MainActivity extends ActionBarActivity implements ConnectionCallbac
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        WebServiceTask webServiceTask = new WebServiceTask();
-        webServiceTask.execute("Bera Aksoy");
 
         mGoogleApiClient = new GoogleApiClient.Builder(this)
                 .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
                 .addApi(LocationServices.API)
                 .build();
     }
 
     @Override
-    public void onConnected(Bundle connectionHint) {
-        Location mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-        LatLng latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
-        Log.i("BAK", "latLng");
+    protected void onStart() {
+        super.onStart();
+        mGoogleApiClient.connect();
     }
 
+    @Override
+    public void onConnected(Bundle connectionHint) {
+        Location mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        Log.i("GoogleApiClient", "Successfully Connected");
+        WebServiceTask webServiceTask = new WebServiceTask();
+        webServiceTask.execute(String.valueOf(mCurrentLocation.getLatitude()), String.valueOf(mCurrentLocation.getLongitude()));
+    }
+
+    private String getAddress() {
+        Location mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+        Geocoder gcd = new Geocoder(this, Locale.getDefault());
+        List<Address> addresses = null;
+        try {
+            addresses = gcd.getFromLocation(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude(), 1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return (addresses.get(0).getLocality());
+    }
 
     @Override
     public void onConnectionSuspended(int i) {
@@ -79,6 +100,11 @@ public class MainActivity extends ActionBarActivity implements ConnectionCallbac
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+        Log.e("GoogleApiClient: ", "Connection Failed");
+    }
+
     private class WebServiceTask extends AsyncTask<String, String, String> {
 
         @Override
@@ -86,16 +112,9 @@ public class MainActivity extends ActionBarActivity implements ConnectionCallbac
             String useUmbrellaStr = "Don't know, sorry about that.";
             HttpURLConnection urlConnection = null;
 
-            Location mCurrentLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
-            LatLng latLng = new LatLng(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude());
 
             try {
-                Double mLatitude = latLng.latitude;
-                Double mLongitude = latLng.longitude;
-
-                //URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=Washington,D.C.&mode=json&units=metric&cnt=1");
-
-                URL url = new URL("http://api.openweathermap.org/data/2.5/find?lat="+mLatitude+"&lon="+mLongitude+"&cnt=10");
+                URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?lat=" + params[0] + "&lon=" + params[1] + "&mode=json&units=metric&cnt=1");
                 urlConnection = (HttpURLConnection) url.openConnection();
                 useUmbrellaStr = useUmbrella(urlConnection.getInputStream());
             } catch (IOException e) {
@@ -113,6 +132,8 @@ public class MainActivity extends ActionBarActivity implements ConnectionCallbac
             super.onPostExecute(s);
             TextView textView = (TextView) findViewById(R.id.hello);
             textView.setText("Should I take and umbrella today? " + s);
+            textView.append("Location: ");
+            textView.append(getAddress());
         }
 
 
@@ -127,17 +148,14 @@ public class MainActivity extends ActionBarActivity implements ConnectionCallbac
                 }
 
                 JSONObject forecastJson = new JSONObject(stringBuilder.toString());
-
                 JSONArray weatherArray = forecastJson.getJSONArray("list");
                 JSONObject todayForecast = weatherArray.getJSONObject(0);
 
-                // String city = forecastJson.getJSONObject("city").getJSONObject("name").toString(); -- not sure why this is not working
-
                 if (todayForecast.has("rain") || todayForecast.has("snow")) {
                     //return city + "Yes";  -- Not sure why this is not working
-                    return "Yes";
+                    return "Yes \n";
                 } else {
-                    return ("No");
+                    return ("No \n");
                 }
             } catch (Exception e) {
                 Log.e("MainActivity", "Error", e);
@@ -152,6 +170,5 @@ public class MainActivity extends ActionBarActivity implements ConnectionCallbac
             }
             return "Don't know, sorry about that.";
         }
-
     }
 }
